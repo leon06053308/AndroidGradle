@@ -1,4 +1,16 @@
 apply plugin: 'com.android.application'
+apply plugin: 'com.gradleforandroid.run'
+
+buildscript {
+    repositories {
+        maven {
+            url uri('../repo')
+        }
+    }
+    dependencies {
+        classpath 'com.cyq.plugins:run:1.0.0'
+    }
+}
 
 android {
     compileSdkVersion 27
@@ -12,17 +24,60 @@ android {
         versionName "1.0"
     }
     buildTypes {
+        debug{
+            buildConfigField "String", "APP_URL", "\"http://test.example.com/api\""
+            resValue "string", "app_name", "Example DEBUG"
+        }
         release {
+            buildConfigField "String", "APP_URL", "\"http://example.com/api\""
+            resValue "string", "app_name", "Example"
+
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
         }
+
+        staging{
+            staging.initWith(buildTypes.debug)
+            applicationIdSuffix ".staging"
+            versionNameSuffix "-staging"
+            debuggable = false
+        }
     }
-}
+
+    flavorDimensions "color", "price"
+    productFlavors {
+        red {
+            dimension "color"
+            applicationId "com.gradleforandroid.red"
+            versionCode 3
+            resValue "color", "flavor_color", "#ff0000"
+        }
+
+        blue{
+            dimension "color"
+            applicationId "com.gradleforandroid.blue"
+            minSdkVersion 14
+            versionCode 4
+            resValue "color", "flavor_color", "#0000ff"
+        }
+
+        free{
+            dimension "price"
+        }
+
+        paid{
+            dimension "price"
+        }
+    }
+    }
 
 dependencies {
     implementation fileTree(dir: 'libs', include: ['*.jar'])
     testImplementation 'junit:junit:4.12'
     implementation 'com.android.support:appcompat-v7:27.0.2'
+
+    redImplementation 'io.reactivex.rxjava2:rxjava:2.1.10'
+    blueImplementation 'io.reactivex.rxjava2:rxjava:2.1.10'
 }
 
 /*android.applicationVariants.all {variant ->
@@ -34,8 +89,75 @@ dependencies {
 }*/
 
 //for gradle 3.0+
-android.applicationVariants.all {variant ->
-    variant.outputs.all {
-        outputFileName = "-${variant.versionName}.apk"
+//android.applicationVariants.all {variant ->
+//    variant.outputs.all {
+//        outputFileName = "${variant.name}-${variant.versionName}.apk"
+//    }
+//}
+
+/*android.applicationVariants.all {variant ->
+    if (variant.install){
+        tasks.create(name:"run${variant.name.capitalize()}",
+        dependsOn: variant.install) {
+            description "Install the ${variant.description} and runs the main laucher activity."
+        }
     }
+}*/
+
+/*ext {
+    local = "Hello from build.gradle"
 }
+
+task printProperties {
+    doLast {
+        println local
+        println propertiesFile
+        if (project.hasProperty('cmd')){
+            println cmd
+        }
+    }
+
+}*/
+
+//./gradlew printProperties -Pcmd="Hello from cmd"
+/*
+android.variantFilter { variant ->
+    if(variant.buildType.name.equals('release')) {
+        variant.getFlavors().each() { flavor ->
+            if (flavor.name.equals('blue')) {
+                variant.setIgnore(true)
+            }
+        }
+    }
+}*/
+
+
+/*task getReleasePassword << {
+    def password = ''
+    def file = rootProject.file('private.properties')
+    if (file.exists()){
+        Properties properties = new Properties()
+        properties.load(file.newDataInputStream())
+        password = properties.getProperty('release.password')
+    }
+    if (!password?.trim()){
+        if(System.console() == null){
+        }else {
+            password = new String(System.console().readPassword("\nWhat's the secret password? "))
+        }
+    }
+
+    android.singingConfigs.release.storePassword = password
+    android.singingConfigs.release.keyPassword = password
+
+}
+
+task hello << {
+    println "Hello world!"
+}
+
+tasks.whenTaskAdded {theTask ->
+    if (theTask.name.equals("packageRedPaidRelease")){
+        theTask.dependsOn "getReleasePassword"
+    }
+}*/
